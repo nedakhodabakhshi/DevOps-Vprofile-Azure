@@ -16,7 +16,7 @@ stages:
   - job: Build
     steps:
     
-    # 1Build the Java Application to Generate vprofile-v2.war
+    # 1️⃣ Build the Java Application to Generate vprofile-v2.war
     - task: Maven@3
       displayName: 'Build with Maven'
       inputs:
@@ -61,10 +61,15 @@ stages:
   jobs:
   - job: Deploy
     steps:
-    # 6️⃣ Configure `kubectl` with AKS
-    - script: |
-        az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
+    # 6️⃣ Authenticate to Azure and Configure `kubectl`
+    - task: AzureCLI@2
       displayName: 'Configure kubectl'
+      inputs:
+        azureSubscription: 'Your-Azure-Service-Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
 
     # 7️⃣ Deploy Application to AKS
     - task: Kubernetes@1

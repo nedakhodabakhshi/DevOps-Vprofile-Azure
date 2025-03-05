@@ -1,0 +1,47 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ACR_NAME: 'vprofileacr'  # Replace with your Azure Container Registry name
+  RESOURCE_GROUP: 'vprofile-rg'
+  AKS_NAME: 'vprofile-aks'
+  IMAGE_NAME: 'vprofile-app'
+  IMAGE_TAG: 'latest'
+
+stages:
+- stage: Build
+  jobs:
+  - job: BuildAndPush
+    displayName: 'Build and Push Docker Image'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Login to Azure'
+      inputs:
+        azureSubscription: 'Your-Azure-Service-Connection'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az acr login --name $(ACR_NAME)
+    
+    - script: |
+        docker build -t $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG) .
+        docker push $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)
+      displayName: 'Build and Push Image to ACR'
+
+- stage: Deploy
+  jobs:
+  - job: DeployToAKS
+    displayName: 'Deploy to AKS'
+    steps:
+    - task: Kubernetes@1
+      displayName: 'Deploy Application'
+      inputs:
+        connectionType: 'Azure Resource Manager'
+        azureSubscription: 'Your-Azure-Service-Connection'
+        azureResourceGroup: '$(RESOURCE_GROUP)'
+        kubernetesCluster: '$(AKS_NAME)'
+        command: 'apply'
+        arguments: '-f deployment.yaml -f service.yaml'

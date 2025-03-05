@@ -5,7 +5,9 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-- group: vProfile-Secrets  # دریافت متغیرها از Azure DevOps Library
+- group: vProfile-Secrets  # Load secrets from Azure DevOps Library
+- name: IMAGE_TAG
+  value: 'latest'
 
 stages:
 - stage: Build
@@ -13,24 +15,45 @@ stages:
   jobs:
   - job: Build
     steps:
+    
+    # 1Build the Java Application to Generate vprofile-v2.war
+    - task: Maven@3
+      displayName: 'Build with Maven'
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'clean package'
+        publishJUnitResults: false
+        javaHomeOption: 'JDKVersion'
+        jdkVersionOption: '1.11'
+        mavenVersionOption: 'Default'
+        mavenOptions: '-Xmx1024m'
+
+    # 2️⃣ Debug - Ensure WAR File Exists
+    - script: |
+        ls -l $(Build.SourcesDirectory)/target/
+      displayName: 'Debug: Check if WAR file exists'
+
+    # 3️⃣ Build the Docker Image
     - task: Docker@2
       displayName: 'Build Docker Image'
       inputs:
         command: 'build'
-        Dockerfile: '**/Dockerfile'
+        Dockerfile: '$(Build.SourcesDirectory)/Dockerfile'  # Ensure correct path
         repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
-        tags: 'latest'
-    
+        tags: '$(IMAGE_TAG)'
+
+    # 4️⃣ Login to Azure Container Registry (ACR)
     - script: |
         echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
       displayName: 'Login to ACR'
-    
+
+    # 5️⃣ Push Docker Image to ACR
     - task: Docker@2
       displayName: 'Push Docker Image to ACR'
       inputs:
         command: 'push'
         repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
-        tags: 'latest'
+        tags: '$(IMAGE_TAG)'
 
 - stage: Deploy
   displayName: 'Deploy to AKS'
@@ -38,10 +61,12 @@ stages:
   jobs:
   - job: Deploy
     steps:
+    # 6️⃣ Configure `kubectl` with AKS
     - script: |
         az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
       displayName: 'Configure kubectl'
-    
+
+    # 7️⃣ Deploy Application to AKS
     - task: Kubernetes@1
       displayName: 'Deploy to AKS'
       inputs:

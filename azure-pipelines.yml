@@ -5,57 +5,61 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  ACR_NAME: 'vprofileacr'  # Replace with your Azure Container Registry name
-  RESOURCE_GROUP: 'vprofile-rg'
-  AKS_NAME: 'vprofile-aks'
-  IMAGE_NAME: 'vprofile-app'
-  IMAGE_TAG: 'latest'
+  ACR_NAME: vprofileacr
+  RESOURCE_GROUP: vprofile-rg
+  AKS_CLUSTER: vprofile-aks
+  IMAGE_NAME: vprofile-app
+  IMAGE_TAG: $(Build.BuildId)
+  ACR_LOGIN_SERVER: $(ACR_NAME).azurecr.io
+
+  # متغیرهای محرمانه که از Library خوانده می‌شوند
+  ACR_USERNAME: $(ACR_USERNAME)
+  ACR_PASSWORD: $(ACR_PASSWORD)
+  SERVICEBUS_CONNECTION: $(SERVICEBUS_CONNECTION)
+  MYSQL_PASSWORD: $(MYSQL_PASSWORD)
 
 stages:
 - stage: Build
+  displayName: 'Build and Push Docker Image'
   jobs:
-  - job: BuildAndPush
-    displayName: 'Build and Push Docker Image'
+  - job: Build
     steps:
-    - task: AzureCLI@2
-      displayName: 'Login to Azure'
+    - task: Docker@2
+      displayName: 'Build Docker Image'
       inputs:
-        azureSubscription: 'c86a005e-95af-4ff8-86ef-10acc600760c' # Replace with your actual service connection name
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          az acr login --name $(ACR_NAME)
-
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
+        tags: '$(IMAGE_TAG)'
+    
     - script: |
-        docker build -t $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG) .
-        docker push $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)
-      displayName: 'Build and Push Image to ACR'
+        echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
+      displayName: 'Login to ACR'
+    
+    - task: Docker@2
+      displayName: 'Push Docker Image to ACR'
+      inputs:
+        command: 'push'
+        repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
+        tags: '$(IMAGE_TAG)'
 
 - stage: Deploy
+  displayName: 'Deploy to AKS'
+  dependsOn: Build
   jobs:
-  - job: DeployToAKS
-    displayName: 'Deploy to AKS'
+  - job: Deploy
     steps:
-    - task: AzureCLI@2
-      displayName: 'Fetch Secrets from Azure Key Vault'
-      inputs:
-        azureSubscription: 'c86a005e-95af-4ff8-86ef-10acc600760c'  # Ensure this is correct
-        scriptType: 'bash'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          echo "Fetching secrets from Azure Key Vault..."
-          REDIS_PASSWORD=$(az keyvault secret show --name redis-password --vault-name vprofile-keyvault --query value -o tsv)
-          SERVICEBUS_CONNECTION_STRING=$(az keyvault secret show --name servicebus-connection-string --vault-name vprofile-keyvault --query value -o tsv)
-          
-          echo "##vso[task.setvariable variable=REDIS_PASSWORD;issecret=true]$REDIS_PASSWORD"
-          echo "##vso[task.setvariable variable=SERVICEBUS_CONNECTION_STRING;issecret=true]$SERVICEBUS_CONNECTION_STRING"
-
+    - script: |
+        az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
+      displayName: 'Configure kubectl'
+    
     - task: Kubernetes@1
-      displayName: 'Deploy Application'
+      displayName: 'Deploy to AKS'
       inputs:
         connectionType: 'Azure Resource Manager'
-        azureSubscription: 'c86a005e-95af-4ff8-86ef-10acc600760c' # Ensure this is correct
-        azureResourceGroup: '$(RESOURCE_GROUP)'
-        kubernetesCluster: '$(AKS_NAME)'
+        azureSubscription: 'Your-Azure-Service-Connection'
+        azureResourceGroup: $(RESOURCE_GROUP)
+        kubernetesCluster: $(AKS_CLUSTER)
+        namespace: 'default'
         command: 'apply'
         arguments: '-f deployment.yaml -f service.yaml'

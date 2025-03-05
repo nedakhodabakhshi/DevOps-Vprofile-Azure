@@ -70,18 +70,15 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
+          az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
 
-    # 7️⃣ Deploy Application to AKS
+    # 7️⃣ Deploy Application to AKS using `kubectl`
     - task: AzureCLI@2
       displayName: 'Deploy to AKS'
       inputs:
-        connectionType: 'Azure Resource Manager'
         azureSubscription: 'vpconnection'  # Ensure this matches your service connection
-        subscriptionId: 'c86a005e-95af-4ff8-86ef-10acc600760c'  # Add this line
-        azureResourceGroup: $(RESOURCE_GROUP)
-        kubernetesCluster: $(AKS_CLUSTER)
-        namespace: 'default'
-        command: 'apply'
-        arguments: '-f deployment.yaml -f service.yaml'
-
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          kubectl apply -f deployment.yaml
+          kubectl apply -f service.yaml

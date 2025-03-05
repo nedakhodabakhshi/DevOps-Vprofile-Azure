@@ -5,14 +5,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-- group: vProfile-Secrets  
-
-  ACR_NAME: vprofileacr
-  RESOURCE_GROUP: vprofile-rg
-  AKS_CLUSTER: vprofile-aks
-  IMAGE_NAME: vprofile-app
-  IMAGE_TAG: $(Build.BuildId)
-  ACR_LOGIN_SERVER: $(ACR_NAME).azurecr.io
+- group: vProfile-Secrets  # دریافت متغیرها از Azure DevOps Library
 
 stages:
 - stage: Build

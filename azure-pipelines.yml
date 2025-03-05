@@ -73,7 +73,7 @@ stages:
           az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER)
 
     # 7️⃣ Deploy Application to AKS
-    - task: Kubernetes@1
+    - task: AzureCLI@2
       displayName: 'Deploy to AKS'
       inputs:
         connectionType: 'Azure Resource Manager'

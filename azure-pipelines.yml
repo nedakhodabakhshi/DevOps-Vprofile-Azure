@@ -17,7 +17,7 @@ stages:
     steps:
     
     # 1️⃣ Build the Java Application to Generate vprofile-v2.war
-    - task: Maven@3
+    - task: Maven@4
       displayName: 'Build with Maven'
       inputs:
         mavenPomFile: 'pom.xml'

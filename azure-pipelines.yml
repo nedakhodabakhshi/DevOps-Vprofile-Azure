@@ -78,6 +78,7 @@ stages:
       inputs:
         connectionType: 'Azure Resource Manager'
         azureSubscription: 'vpconnection'  # Ensure this matches your service connection
+        #subscriptionId: '<YOUR_AZURE_SUBSCRIPTION_ID>'  # Add this line
         azureResourceGroup: $(RESOURCE_GROUP)
         kubernetesCluster: $(AKS_CLUSTER)
         namespace: 'default'

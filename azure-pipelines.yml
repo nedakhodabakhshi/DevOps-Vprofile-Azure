@@ -19,7 +19,7 @@ stages:
         command: 'build'
         Dockerfile: '**/Dockerfile'
         repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
-        tags: '$(IMAGE_TAG)'
+        tags: 'latest'
     
     - script: |
         echo $(ACR_PASSWORD) | docker login $(ACR_LOGIN_SERVER) -u $(ACR_USERNAME) --password-stdin
@@ -30,7 +30,7 @@ stages:
       inputs:
         command: 'push'
         repository: '$(ACR_LOGIN_SERVER)/$(IMAGE_NAME)'
-        tags: '$(IMAGE_TAG)'
+        tags: 'latest'
 
 - stage: Deploy
   displayName: 'Deploy to AKS'

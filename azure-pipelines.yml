@@ -53,7 +53,7 @@ stages:
       displayName: 'Deploy to AKS'
       inputs:
         connectionType: 'Azure Resource Manager'
-        azureSubscription: 'vpconnection'
+        azureSubscription: 'Your-Azure-Service-Connection'
         azureResourceGroup: $(RESOURCE_GROUP)
         kubernetesCluster: $(AKS_CLUSTER)
         namespace: 'default'

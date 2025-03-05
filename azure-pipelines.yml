@@ -20,12 +20,12 @@ stages:
     - task: AzureCLI@2
       displayName: 'Login to Azure'
       inputs:
-        azureSubscription: 'Your-Azure-Service-Connection'
+        azureSubscription: 'Azure-Service-Connection' # ✅ Replace with your actual service connection name
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
           az acr login --name $(ACR_NAME)
-    
+
     - script: |
         docker build -t $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG) .
         docker push $(ACR_NAME).azurecr.io/$(IMAGE_NAME):$(IMAGE_TAG)
@@ -36,11 +36,25 @@ stages:
   - job: DeployToAKS
     displayName: 'Deploy to AKS'
     steps:
+    - task: AzureCLI@2
+      displayName: 'Fetch Secrets from Azure Key Vault'
+      inputs:
+        azureSubscription: 'Azure-Service-Connection'  # ✅ Ensure this is correct
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          echo "Fetching secrets from Azure Key Vault..."
+          REDIS_PASSWORD=$(az keyvault secret show --name redis-password --vault-name vprofile-keyvault --query value -o tsv)
+          SERVICEBUS_CONNECTION_STRING=$(az keyvault secret show --name servicebus-connection-string --vault-name vprofile-keyvault --query value -o tsv)
+          
+          echo "##vso[task.setvariable variable=REDIS_PASSWORD;issecret=true]$REDIS_PASSWORD"
+          echo "##vso[task.setvariable variable=SERVICEBUS_CONNECTION_STRING;issecret=true]$SERVICEBUS_CONNECTION_STRING"
+
     - task: Kubernetes@1
       displayName: 'Deploy Application'
       inputs:
         connectionType: 'Azure Resource Manager'
-        azureSubscription: 'Your-Azure-Service-Connection'
+        azureSubscription: 'Azure-Service-Connection' # ✅ Ensure this is correct
         azureResourceGroup: '$(RESOURCE_GROUP)'
         kubernetesCluster: '$(AKS_NAME)'
         command: 'apply'

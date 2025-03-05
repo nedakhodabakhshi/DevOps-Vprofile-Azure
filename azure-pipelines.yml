@@ -20,7 +20,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Login to Azure'
       inputs:
-        azureSubscription: 'Azure-Service-Connection' # ✅ Replace with your actual service connection name
+        azureSubscription: 'Azure subscription 1' # Replace with your actual service connection name
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
@@ -39,7 +39,7 @@ stages:
     - task: AzureCLI@2
       displayName: 'Fetch Secrets from Azure Key Vault'
       inputs:
-        azureSubscription: 'Azure-Service-Connection'  # ✅ Ensure this is correct
+        azureSubscription: 'Azure subscription 1'  # Ensure this is correct
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
@@ -54,7 +54,7 @@ stages:
       displayName: 'Deploy Application'
       inputs:
         connectionType: 'Azure Resource Manager'
-        azureSubscription: 'Azure-Service-Connection' # ✅ Ensure this is correct
+        azureSubscription: 'Azure subscription 1' # Ensure this is correct
         azureResourceGroup: '$(RESOURCE_GROUP)'
         kubernetesCluster: '$(AKS_NAME)'
         command: 'apply'

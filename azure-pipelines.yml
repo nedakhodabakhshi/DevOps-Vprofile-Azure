@@ -70,6 +70,7 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
+          az account set --subscription $(SUBSCRIPTION_ID)
           az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
 
     # 7️⃣ Deploy Application to AKS using `kubectl`

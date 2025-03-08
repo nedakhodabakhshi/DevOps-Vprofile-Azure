@@ -70,7 +70,10 @@ stages:
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
+          echo "🔍 Debugging SUBSCRIPTION_ID: $(SUBSCRIPTION_ID)"
+          az account list --output table
           az account set --subscription $(SUBSCRIPTION_ID)
+          az account show
           az aks get-credentials --resource-group $(RESOURCE_GROUP) --name $(AKS_CLUSTER) --overwrite-existing
 
     # 7️⃣ Deploy Application to AKS using `kubectl`
